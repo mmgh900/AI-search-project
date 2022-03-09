@@ -166,7 +166,7 @@ class Find:
             neighbors = self.__successor(cell)
 
             for c in neighbors:
-                if c.row == endRow and c.col == endCol and self.__check_goal(cell):
+                if c.row == endRow and c.col == endCol and self.__check_goal(c):
                     return
                 else:
                     if not cell.table[c.row][c.col]:
@@ -176,9 +176,6 @@ class Find:
         print('no solution!!!')
 
     def dls(self, src: Cell, target_row: int, target_col: int, max_depth: int) -> bool:
-        self.explored_hashes.append(src.__hash__())
-        self.explored.append(src)
-
         if src.row == self.goal[0] and src.col == self.goal[1]:
             if self.__check_goal(src):
                 return True
@@ -189,8 +186,9 @@ class Find:
         neighbors = self.__successor(src)
 
         for c in neighbors:
-            if self.dls(c, target_row, target_col, max_depth - 1):
-                return True
+            if not src.table[c.row][c.col]:
+                if self.dls(c, target_row, target_col, max_depth - 1):
+                    return True
         return False
 
     def iddfs(self, max_depth: int):
@@ -248,7 +246,7 @@ class Find:
         while len(open_list) > 0:
             # Finding the best neighbor
             best_cell_index = -1
-            best_cell_f = 9999999
+            best_cell_f = INFINITY
 
             for (index, cell) in enumerate(open_list):
                 cell_f = self.__calculate_f_value(open_list[index])
@@ -261,27 +259,8 @@ class Find:
 
             for neighbor in neighbors:
                 # Check to see if reached the goal
-                if neighbor.row == endRow and neighbor.col == endCol and self.__check_goal(cell):
+                if neighbor.row == endRow and neighbor.col == endCol and self.__check_goal(neighbor):
                     return
-                #
-                # # Check to see if the cell is in closed list
-                # match_in_closed_list = None
-                # for exploredCell in self.explored:
-                #     if exploredCell.row == neighbor.row and exploredCell.col == neighbor.col:
-                #         match_in_closed_list = exploredCell
-                #         continue
-                # if match_in_closed_list is not None:
-                #     continue
-
-                # # Check to see if the cell is in open list
-                # match_in_open_list = None
-                # for openNode in open_list:
-                #     if openNode.row == neighbor.row and openNode.col == neighbor.col \
-                #             and openNode.path_cost <= neighbor.path_cost:
-                #         match_in_open_list = openNode
-                #         continue
-                # if match_in_open_list is not None:
-                #     continue
 
                 if not cell.table[neighbor.row][neighbor.col]:
                     open_list.append(neighbor)
@@ -295,8 +274,3 @@ class Find:
 
         for p in cell.path:
             print(str(p.row + 1) + ' ' + str(p.col + 1))
-
-        if self.isBackward:
-            print(str(self.source[0] + 1) + ' ' + str(self.source[1] + 1))
-        else:
-            print(str(self.goal[0] + 1) + ' ' + str(self.goal[1] + 1))

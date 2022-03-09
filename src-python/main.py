@@ -37,7 +37,7 @@ def bds_search(board: Board):
             break
 
 
-def ids_search(board: Board):
+def ids_search(board: Board):  # TODO: Has problem with sample 3
     find_forward = Find(board)
     find_forward.iddfs(100)
 
@@ -53,4 +53,4 @@ if __name__ == '__main__':
     for i in range(m):
         b.append(input().split(' '))
     board = Board(m, n, b)
-    a_star_search(board)
+    bfs_search(board)

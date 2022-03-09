@@ -233,27 +233,28 @@ class Find:
                 # Check to see if reached the goal
                 if neighbor.row == endRow and neighbor.col == endCol and self.__check_goal(cell):
                     return
+                #
+                # # Check to see if the cell is in closed list
+                # match_in_closed_list = None
+                # for exploredCell in self.explored:
+                #     if exploredCell.row == neighbor.row and exploredCell.col == neighbor.col:
+                #         match_in_closed_list = exploredCell
+                #         continue
+                # if match_in_closed_list is not None:
+                #     continue
 
-                # Check to see if the cell is in closed list
-                match_in_closed_list = None
-                for exploredCell in self.explored:
-                    if exploredCell.row == neighbor.row and exploredCell.col == neighbor.col:
-                        match_in_closed_list = exploredCell
-                        continue
-                if match_in_closed_list is not None:
-                    continue
+                # # Check to see if the cell is in open list
+                # match_in_open_list = None
+                # for openNode in open_list:
+                #     if openNode.row == neighbor.row and openNode.col == neighbor.col \
+                #             and openNode.path_cost <= neighbor.path_cost:
+                #         match_in_open_list = openNode
+                #         continue
+                # if match_in_open_list is not None:
+                #     continue
 
-                # Check to see if the cell is in open list
-                match_in_open_list = None
-                for openNode in open_list:
-                    if openNode.row == neighbor.row and openNode.col == neighbor.col \
-                            and openNode.path_cost <= neighbor.path_cost:
-                        match_in_open_list = openNode
-                        continue
-                if match_in_open_list is not None:
-                    continue
-
-                open_list.append(neighbor)
+                if not cell.table[neighbor.row][neighbor.col]:
+                    open_list.append(neighbor)
 
             self.explored.append(cell)
 

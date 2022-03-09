@@ -18,3 +18,7 @@ class Cell:
     def __hash__(self):
         return ','.join(str(item) for innerlist in self.table for item in innerlist) + '@@@' + str(
             self.row) + ' ' + str(self.col) + '###' + str(self.path_value) + ' ' + str(self.goal_value)
+
+    def __str__(self):
+        return f'({self.row + 1}, {self.col + 1})'
+

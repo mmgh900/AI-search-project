@@ -37,7 +37,7 @@ def bds_search(board: Board):
             break
 
 
-def ids_search(board: Board):  # TODO: Has problem with sample 3
+def ids_search(board: Board):
     find_forward = Find(board)
     find_forward.iddfs(100)
 

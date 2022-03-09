@@ -5,6 +5,8 @@ from typing import List
 from Board import Board
 from Cell import Cell
 
+INFINITY = 9999999
+
 
 class Find:
     Costs = {
@@ -48,8 +50,7 @@ class Find:
     def __get_euclidean_heuristic_distance(self, row: int, col: int):
         x_power_two = math.fabs(self.goal[0] - row) ** 2
         y_power_two = math.fabs(self.goal[1] - col) ** 2
-        distance = math.sqrt(x_power_two + y_power_two)
-        return distance
+        return x_power_two + y_power_two * 3  # 3 = average cost
 
     def __successor(self, currentCell: Cell) -> List[Cell]:
 
@@ -165,9 +166,8 @@ class Find:
             neighbors = self.__successor(cell)
 
             for c in neighbors:
-                if c.row == endRow and c.col == endCol:
-                    if self.__check_goal(cell):
-                        return
+                if c.row == endRow and c.col == endCol and self.__check_goal(cell):
+                    return
                 else:
                     if not cell.table[c.row][c.col]:
                         queue.append(c)
@@ -205,6 +205,36 @@ class Find:
 
         print('No solution!')
         return
+
+    def ida_star(self):
+        startRow, startCol, endRow, endCol = self.source[0], self.source[1], self.goal[0], self.goal[1]
+        src = Cell(startRow, startCol, [[False for _ in range(self.board.n)] for _ in range(self.board.m)],
+                   self.__get_number(startRow, startCol),
+                   self.__get_number(endRow, endCol), [])
+        bound = self.__get_euclidean_heuristic_distance(startRow, startCol)
+        while True:
+            threshold = self.ida_star_search(src, bound)
+            if threshold == "FOUND":
+                return "FOUND"
+            if threshold == INFINITY:
+                print('No solution!')
+                return "NOT FOUND"
+            bound = threshold
+
+    def ida_star_search(self, src: Cell, bound: float):
+        startRow, startCol, endRow, endCol = self.source[0], self.source[1], self.goal[0], self.goal[1]
+        src_f = self.__calculate_f_value(src)
+        if src_f > bound: return src_f
+        if src.row == endRow and src.col == endCol and self.__check_goal(src):
+            return "FOUND"
+        minimum_cost = INFINITY
+        neighbors = self.__successor(src)
+        for neighbor in neighbors:
+            if not src.table[neighbor.row][neighbor.col]:
+                threshold = self.ida_star_search(neighbor, bound)
+                if threshold == "FOUND": return "FOUND"
+                if threshold < minimum_cost: minimum_cost = threshold
+        return minimum_cost
 
     def a_star(self):
         startRow, startCol, endRow, endCol = self.source[0], self.source[1], self.goal[0], self.goal[1]

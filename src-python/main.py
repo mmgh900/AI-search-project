@@ -47,10 +47,15 @@ def a_star_search(board: Board):
     find_forward.a_star()
 
 
+def ida_star_search(board: Board):
+    find_forward = Find(board, applyCost=True)
+    find_forward.ida_star()
+
+
 if __name__ == '__main__':
     m, n = map(int, input().split(' '))
     b = []
     for i in range(m):
         b.append(input().split(' '))
     board = Board(m, n, b)
-    bfs_search(board)
+    a_star_search(board)

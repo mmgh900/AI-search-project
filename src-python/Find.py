@@ -25,7 +25,7 @@ class Find:
         self.explored: List[Cell] = []
         self.explored_hashes = []
         self.isBackward = isBackward
-        self.applyCost = applyCost
+        self.applyCosts = applyCost
 
     def __find_source(self):
         for row in range(self.board.m):
@@ -46,42 +46,55 @@ class Find:
         return int(self.board.cells[row][col][1:])
 
     def __get_euclidean_heuristic_distance(self, row: int, col: int):
-        return int(math.sqrt(math.fabs(self.goal[0] - row) ** 2 + math.fabs(self.goal[1] - col) ** 2))
+        x_power_two = math.fabs(self.goal[0] - row) ** 2
+        y_power_two = math.fabs(self.goal[1] - col) ** 2
+        distance = math.sqrt(x_power_two + y_power_two)
+        return distance
 
-    def __successor(self, cell: Cell) -> List[Cell]:
+    def __successor(self, currentCell: Cell) -> List[Cell]:
 
         cells = []
 
-        def common_part(c):
-            c.path.append(c)
+        def common_part(nextCell):
+            nextCell.path.append(nextCell)
             if self.isBackward:
-                c.path_value, c.goal_value = self.__cal_reversed_opt(cell.path_value, cell.goal_value, c.row, c.col)
+                nextCell.path_value, nextCell.goal_value = self.__apply_reversed_opt(currentCell.path_value,
+                                                                                     currentCell.goal_value,
+                                                                                     nextCell.row, nextCell.col)
             else:
-                c.path_value, c.goal_value = self.__cal_opt(cell.path_value, cell.goal_value, c.row, c.col)
+                nextCell.path_value, nextCell.goal_value = self.__apply_opt(currentCell.path_value,
+                                                                            currentCell.goal_value,
+                                                                            nextCell.row, nextCell.col)
 
-            if not self.explored.__contains__(c.__hash__()):
-                cells.append(c)
+            if self.applyCosts:
+                nextCell.path_cost = self.__apply_cost(currentCell.path_cost, nextCell.row, nextCell.col)
 
-        if cell.row > 0:
-            if self.__get_opt(cell.row - 1, cell.col) != 'w':
-                c = Cell(cell.row - 1, cell.col, copy.deepcopy(cell.table), 0, 0, cell.path.copy())
-                common_part(c)
-        if cell.col > 0:
-            if self.__get_opt(cell.row, cell.col - 1) != 'w':
-                c = Cell(cell.row, cell.col - 1, copy.deepcopy(cell.table), 0, 0, cell.path.copy())
-                common_part(c)
+            if not self.explored_hashes.__contains__(nextCell.__hash__()):
+                cells.append(nextCell)
 
-        if cell.row < self.board.m - 1:
-            if self.__get_opt(cell.row + 1, cell.col) != 'w':
-                c = Cell(cell.row + 1, cell.col, copy.deepcopy(cell.table), 0, 0, cell.path.copy())
+        if currentCell.row > 0:
+            if self.__get_opt(currentCell.row - 1, currentCell.col) != 'w':
+                c = Cell(currentCell.row - 1, currentCell.col, copy.deepcopy(currentCell.table), 0, 0,
+                         currentCell.path.copy())
                 common_part(c)
-        if cell.col < self.board.n - 1:
-            if self.__get_opt(cell.row, cell.col + 1) != 'w':
-                c = Cell(cell.row, cell.col + 1, copy.deepcopy(cell.table), 0, 0, cell.path.copy())
+        if currentCell.col > 0:
+            if self.__get_opt(currentCell.row, currentCell.col - 1) != 'w':
+                c = Cell(currentCell.row, currentCell.col - 1, copy.deepcopy(currentCell.table), 0, 0,
+                         currentCell.path.copy())
+                common_part(c)
+        if currentCell.row < self.board.m - 1:
+            if self.__get_opt(currentCell.row + 1, currentCell.col) != 'w':
+                c = Cell(currentCell.row + 1, currentCell.col, copy.deepcopy(currentCell.table), 0, 0,
+                         currentCell.path.copy())
+                common_part(c)
+        if currentCell.col < self.board.n - 1:
+            if self.__get_opt(currentCell.row, currentCell.col + 1) != 'w':
+                c = Cell(currentCell.row, currentCell.col + 1, copy.deepcopy(currentCell.table), 0, 0,
+                         currentCell.path.copy())
                 common_part(c)
         return cells
 
-    def __cal_reversed_opt(self, path_sum, goal_value, row, col):
+    def __apply_reversed_opt(self, path_sum, goal_value, row, col):
         opt = self.__get_opt(row, col)
 
         if opt == '+':
@@ -99,7 +112,7 @@ class Find:
 
         return path_sum, goal_value
 
-    def __cal_opt(self, path_sum, goal_value, row, col):
+    def __apply_opt(self, path_sum, goal_value, row, col):
         operation = self.__get_opt(row, col)
         amount = self.__get_number(row, col)
         if operation == '+':
@@ -115,10 +128,12 @@ class Find:
         elif operation == 'b':
             goal_value -= amount
 
-        if self.applyCost:
-            path_sum -= self.Costs[operation]
-
         return path_sum, goal_value
+
+    def __apply_cost(self, current_cost, row, col):
+        operation = self.__get_opt(row, col)
+        amount = self.Costs[operation]
+        return current_cost + amount
 
     def __check_goal(self, cell: Cell) -> bool:
         if (cell.path_value <= cell.goal_value and self.isBackward) or (
@@ -128,7 +143,7 @@ class Find:
         return False
 
     def __calculate_f_value(self, cell: Cell) -> float:
-        return cell.path_value - self.__get_euclidean_heuristic_distance(cell.row, cell.col)
+        return cell.path_cost + self.__get_euclidean_heuristic_distance(cell.row, cell.col)
 
     def bfs(self):
         if self.isBackward:
@@ -201,26 +216,46 @@ class Find:
         open_list[0].path.append(open_list[0])
 
         while len(open_list) > 0:
-            cell = open_list.pop(0)
-            self.explored_hashes.append(cell.__hash__())
-            self.explored.append(cell)
+            # Finding the best neighbor
+            best_cell_index = -1
+            best_cell_f = 9999999
+
+            for (index, cell) in enumerate(open_list):
+                cell_f = self.__calculate_f_value(open_list[index])
+                if cell_f < best_cell_f:
+                    best_cell_index = index
+                    best_cell_f = cell_f
+
+            cell = open_list.pop(best_cell_index)
             neighbors = self.__successor(cell)
 
-            # Finding the best neighbor
-            best_neighbor = None
-            best_neighbor_f = 0
-
             for neighbor in neighbors:
-                neighbor_f = self.__calculate_f_value(neighbor)
-
-                if neighbor.row == endRow and neighbor.col == endCol and self.__check_goal(neighbor):
+                # Check to see if reached the goal
+                if neighbor.row == endRow and neighbor.col == endCol and self.__check_goal(cell):
                     return
-                if neighbor_f >= best_neighbor_f:
-                    best_neighbor = neighbor
-                    best_neighbor_f = neighbor_f
 
-            if best_neighbor is not None:
-                open_list.append(best_neighbor)
+                # Check to see if the cell is in closed list
+                match_in_closed_list = None
+                for exploredCell in self.explored:
+                    if exploredCell.row == neighbor.row and exploredCell.col == neighbor.col:
+                        match_in_closed_list = exploredCell
+                        continue
+                if match_in_closed_list is not None:
+                    continue
+
+                # Check to see if the cell is in open list
+                match_in_open_list = None
+                for openNode in open_list:
+                    if openNode.row == neighbor.row and openNode.col == neighbor.col \
+                            and openNode.path_cost <= neighbor.path_cost:
+                        match_in_open_list = openNode
+                        continue
+                if match_in_open_list is not None:
+                    continue
+
+                open_list.append(neighbor)
+
+            self.explored.append(cell)
 
         print('no solution!!!')
 
